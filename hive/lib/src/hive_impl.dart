@@ -77,19 +77,19 @@ class HiveImpl extends TypeRegistryImpl implements HiveInterface {
     assert(name.length <= 255 && name.isAscii,
         'Box names need to be ASCII Strings with a max length of 255.');
     name = name.toLowerCase();
-    if (isBoxOpen(name)) {
+    if (isBoxOpen(name, collection)) {
       if (lazy) {
-        return lazyBox(name);
+        return lazyBox(name, collection);
       } else {
-        return box(name);
+        return box(name, collection);
       }
     } else {
       if (_openingBoxes.containsKey(TupleBoxKey(name, collection))) {
         await _openingBoxes[TupleBoxKey(name, collection)];
         if (lazy) {
-          return lazyBox(name);
+          return lazyBox(name, collection);
         } else {
-          return box(name);
+          return box(name, collection);
         }
       }
 

@@ -1,3 +1,4 @@
+import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
 import 'package:hive/hive.dart';
@@ -6,6 +7,21 @@ import 'package:hive_generator/src/class_builder.dart';
 import 'package:hive_generator/src/enum_builder.dart';
 import 'package:hive_generator/src/helper.dart';
 import 'package:source_gen/source_gen.dart';
+
+extension _WithCapitalizedFirstLetter on AdapterField {
+  String get getterName {
+    if (name.startsWith('_')) {
+      return '_get${name.substring(1, 2).toUpperCase()}${name.substring(2)}';
+    }
+    return 'get${name.substring(0, 1).toUpperCase()}${name.substring(1)}';
+  }
+  String get setterName {
+    if (name.startsWith('_')) {
+      return '_set${name.substring(1, 2).toUpperCase()}${name.substring(2)}';
+    }
+    return 'set${name.substring(0, 1).toUpperCase()}${name.substring(1)}';
+  }
+}
 
 class TypeAdapterGenerator extends GeneratorForAnnotation<HiveType> {
   static String generateName(String typeName) {
@@ -34,16 +50,76 @@ class TypeAdapterGenerator extends GeneratorForAnnotation<HiveType> {
     verifyFieldIndices(setters);
 
     var typeId = getTypeId(annotation);
+    final isOptimized = getIsOptimized(annotation);
+    final readHook = getReadHook(annotation);
 
     var adapterName = getAdapterName(interface.name, annotation);
     var builder = interface is EnumElement
         ? EnumBuilder(interface, getters)
-        : ClassBuilder(interface, getters, setters);
+        : ClassBuilder(interface, getters, setters, isOptimized, readHook);
+
+    final fieldMetadata = StringBuffer();
+    if (interface is! EnumElement) {
+      fieldMetadata.writeln(
+        'class ${interface.name}Fields {');
+      for (final getter in getters) {
+        if (getter.isDeprecated) {
+          // Don't expose it
+          continue;
+        }
+        fieldMetadata.writeln(
+          'static ${getter.type} ${getter.getterName}'
+          '(${interface.name} x) => x.${getter.name};'
+        );
+        if (!getter.isReadOnly) {
+          fieldMetadata.writeln(
+          'static void ${getter.setterName}'
+          '(${interface.name} x, ${getter.type} v) => x.${getter.name} = v;');
+        }
+        fieldMetadata.write(
+          '  static const ${getter.name} = ');
+        if (getter.isReadOnly) {
+          fieldMetadata.write('ReadOnly');
+        }
+        fieldMetadata.writeln(
+          'HiveFieldAdapter<${interface.name}, ${getter.type.toString()}>(');
+        fieldMetadata.writeln(
+          '    getter: ${getter.getterName},');
+        if (!getter.isReadOnly) {
+          fieldMetadata.writeln(
+          '    setter: ${getter.setterName},');
+        }
+        fieldMetadata.writeln(
+          '    fieldNumber: ${getter.index},');
+        fieldMetadata.writeln(
+          '    fieldName: \'${getter.name}\',');
+        fieldMetadata.writeln(
+          '    merger: ${getter.mergerConstructor},');
+        fieldMetadata.writeln(
+          '  );');
+      }
+      fieldMetadata.writeln('}');
+      fieldMetadata.writeln();
+    }
 
     return '''
-    class $adapterName extends TypeAdapter<${interface.name}> {
+    ${fieldMetadata}class $adapterName extends TypeAdapter<${interface.name}> {
+      const $adapterName();
+
+      static const int kTypeId = $typeId;
+
       @override
-      final int typeId = $typeId;
+      final int typeId = kTypeId;
+
+      @override
+      final Map<int, ReadOnlyHiveFieldAdapter<${interface.name}, dynamic>> fields = const {${
+        interface is EnumElement ?
+          '' :
+          getters
+            .where((g) => !g.isDeprecated)
+            .map((g) => '${g.index}: ${interface.name}Fields.${g.name}')
+            .join(', ')
+      }};
 
       @override
       ${interface.name} read(BinaryReader reader) {
@@ -111,6 +187,10 @@ class TypeAdapterGenerator extends GeneratorForAnnotation<HiveType> {
             field.name,
             field.type,
             getterAnn.defaultValue,
+            getterAnn.merger,
+            field.isFinal || field.isConst,
+            getterAnn.isDeprecated,
+            getterAnn.isOptimized,
           ));
         }
       }
@@ -126,6 +206,10 @@ class TypeAdapterGenerator extends GeneratorForAnnotation<HiveType> {
             field.name,
             field.type,
             setterAnn.defaultValue,
+            setterAnn.merger,
+            field.isFinal || field.isConst,
+            setterAnn.isDeprecated,
+            setterAnn.isOptimized,
           ));
         }
       }
@@ -166,5 +250,21 @@ class TypeAdapterGenerator extends GeneratorForAnnotation<HiveType> {
       'You have to provide a non-null typeId.',
     );
     return annotation.read('typeId').intValue;
+  }
+
+  bool getIsOptimized(ConstantReader annotation) {
+    check(
+      !annotation.read('isOptimized').isNull,
+      'You have to provide a non-null isOptimized.',
+    );
+    return annotation.read('isOptimized').boolValue;
+  }
+
+  DartObject? getReadHook(ConstantReader annotation) {
+    final readHook = annotation.read('readHook');
+    if (readHook.isNull) {
+      return null;
+    }
+    return readHook.objectValue;
   }
 }

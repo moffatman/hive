@@ -3,20 +3,23 @@ import 'package:analyzer/dart/element/type.dart';
 import 'package:source_gen/source_gen.dart';
 import 'package:source_helper/source_helper.dart';
 
-const bool kConstConstructors = true;
-
 String constantToString(
   DartObject? object, [
   List<String> typeInformation = const [],
+  bool constConstructors = true,
 ]) {
   if (object == null || object.isNull) return 'null';
   final reader = ConstantReader(object);
   return reader.isLiteral
-      ? literalToString(object, typeInformation)
-      : revivableToString(object, typeInformation);
+      ? literalToString(object, typeInformation, constConstructors)
+      : revivableToString(object, typeInformation, constConstructors);
 }
 
-String revivableToString(DartObject? object, List<String> typeInformation) {
+String revivableToString(
+  DartObject? object,
+  List<String> typeInformation,
+  bool constConstructors,
+) {
   final reader = ConstantReader(object);
   final revivable = reader.revive();
 
@@ -26,13 +29,14 @@ String revivableToString(DartObject? object, List<String> typeInformation) {
   } else {
     // Classes
     final nextTypeInformation = [...typeInformation, '$object'];
-    final prefix = kConstConstructors ? 'const ' : '';
+    final prefix = constConstructors ? 'const ' : '';
     final ctor = revivable.accessor.isEmpty ? '' : '.${revivable.accessor}';
     final arguments = <String>[
       for (var arg in revivable.positionalArguments)
-        constantToString(arg, nextTypeInformation),
+        constantToString(arg, nextTypeInformation, constConstructors),
       for (var kv in revivable.namedArguments.entries)
-        '${kv.key}: ${constantToString(kv.value, nextTypeInformation)}'
+        '${kv.key}: ${
+          constantToString(kv.value,nextTypeInformation, constConstructors)}'
     ];
 
     return '$prefix${revivable.source.fragment}$ctor(${arguments.join(', ')})';
@@ -41,7 +45,8 @@ String revivableToString(DartObject? object, List<String> typeInformation) {
 
 // The code below is based on code from https://github.com/google/json_serializable.dart/blob/df60c2a95c4c0054d6ab785849937d7f5ade39fe/json_serializable/lib/src/json_key_utils.dart#L43
 
-String literalToString(DartObject object, List<String> typeInformation) {
+String literalToString(
+  DartObject object, List<String> typeInformation, bool constConstructors) {
   final reader = ConstantReader(object);
 
   String? badType;
@@ -84,7 +89,8 @@ String literalToString(DartObject object, List<String> typeInformation) {
   if (reader.isList) {
     final listTypeInformation = [...typeInformation, 'List'];
     final listItems = reader.listValue
-        .map((it) => constantToString(it, listTypeInformation))
+        .map((it) =>
+          constantToString(it, listTypeInformation, constConstructors))
         .join(', ');
     return '[$listItems]';
   }
@@ -92,7 +98,8 @@ String literalToString(DartObject object, List<String> typeInformation) {
   if (reader.isSet) {
     final setTypeInformation = [...typeInformation, 'Set'];
     final setItems = reader.setValue
-        .map((it) => constantToString(it, setTypeInformation))
+        .map((it) =>
+          constantToString(it, setTypeInformation, constConstructors))
         .join(', ');
     return '{$setItems}';
   }
@@ -111,9 +118,9 @@ String literalToString(DartObject object, List<String> typeInformation) {
       }
 
       buffer
-        ..write(constantToString(key, mapTypeInformation))
+        ..write(constantToString(key, mapTypeInformation, constConstructors))
         ..write(': ')
-        ..write(constantToString(value, mapTypeInformation));
+        ..write(constantToString(value, mapTypeInformation, constConstructors));
     });
 
     buffer.write('}');

@@ -6,11 +6,14 @@ import 'dart:typed_data';
 import 'package:hive/hive.dart';
 import 'package:hive/src/adapters/big_int_adapter.dart';
 import 'package:hive/src/adapters/date_time_adapter.dart';
+import 'package:hive/src/binary/binary_reader_impl.dart';
+import 'package:hive/src/binary/binary_writer_impl.dart';
 import 'package:hive/src/box/box_base_impl.dart';
 import 'package:hive/src/box/box_impl.dart';
 import 'package:hive/src/box/default_compaction_strategy.dart';
 import 'package:hive/src/box/default_key_comparator.dart';
 import 'package:hive/src/box/lazy_box_impl.dart';
+import 'package:hive/src/json_writer.dart';
 import 'package:hive/src/registry/type_registry_impl.dart';
 import 'package:hive/src/util/extensions.dart';
 import 'package:meta/meta.dart';
@@ -308,6 +311,30 @@ class HiveImpl extends TypeRegistryImpl implements HiveInterface {
   }
 
   @override
+  MergeResult<T> merge<T extends Object>({
+    required FieldMerger<T> merger,
+    required T yours,
+    required T theirs,
+    T? base,
+    List<String> skipPaths = const []
+  }) {
+    final m = BaseMergerController<T>(
+      typeRegistry: this,
+      skips: skipPaths.map((s) => s.split('/')).toList(),
+      yours: yours,
+      theirs: theirs,
+      base: base,
+      merger: merger
+    );
+    m.merge();
+    return MergeResult(
+      wroteYours: m.wroteYours,
+      wroteTheirs: m.wroteTheirs,
+      conflicts: m.conflicts
+    );
+  }
+
+  @override
   dynamic decode(Uint8List bytes) {
     return BinaryReaderImpl(bytes, this).read();
   }
@@ -317,6 +344,12 @@ class HiveImpl extends TypeRegistryImpl implements HiveInterface {
     final writer = BinaryWriterImpl(this);
     writer.write(value);
     return writer.toBytes();
+  }
+
+  @override
+  String encodeJson(dynamic value) {
+    final writer = JsonWriter(this);
+    return writer.write(value);
   }
 }
 

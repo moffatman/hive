@@ -16,7 +16,12 @@ class ClassBuilder extends Builder {
     InterfaceElement interface,
     List<AdapterField> getters,
     List<AdapterField> setters,
+    this.isOptimized,
+    this.readHook,
   ) : super(interface, getters, setters);
+
+  final bool isOptimized;
+  final DartObject? readHook;
 
   var hiveListChecker = const TypeChecker.fromRuntime(HiveList);
   var listChecker = const TypeChecker.fromRuntime(List);
@@ -24,6 +29,17 @@ class ClassBuilder extends Builder {
   var setChecker = const TypeChecker.fromRuntime(Set);
   var iterableChecker = const TypeChecker.fromRuntime(Iterable);
   var uint8ListChecker = const TypeChecker.fromRuntime(Uint8List);
+
+  bool _problemWithOptimizedField(AdapterField field) {
+    if (field.isOptimized &&
+        (field.type.nullabilitySuffix == NullabilitySuffix.none) &&
+        (field.defaultValue?.isNull != false)) {
+      print('Optimized non-nullable field ${interface.name}.${field.name} '
+            'has no defaultValue');
+      return true;
+    }
+    return false;
+  }
 
   @override
   String buildRead() {
@@ -39,21 +55,51 @@ class ClassBuilder extends Builder {
       return 'return ${interface.name}();';
     }
 
+    var foundBadFields = false;
+
     var code = StringBuffer();
-    code.writeln('''
-    final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++)
-        reader.readByte(): reader.read(),
-    };
-    return ${interface.name}(
-    ''');
+    code.writeln('final numOfFields = reader.readByte();');
+    if (isOptimized) {
+      code.writeln('''
+      final Map<int, dynamic> fields;
+      if (numOfFields == 255) {
+        // Dynamic number of fields
+        fields = {};
+        while (true) {
+          final int fieldId = reader.readByte();
+          fields[fieldId] = reader.read();
+          if (fieldId == 0) {
+            break;
+          }
+        }
+      }
+      else {
+        fields = <int, dynamic>{
+          for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+        };
+      }''');
+    }
+    else {
+      check (getters.every((g) => !g.isOptimized),
+        'Optimized fields are only allowed in optimized classes.');
+      code.writeln('''
+      final fields = <int, dynamic>{
+        for (int i = 0; i < numOfFields; i++)
+          reader.readByte(): reader.read(),
+      };''');
+    }
+    if (readHook != null) {
+      code.writeln('${constantToString(readHook)}(fields);');
+    }
+    code.writeln('return ${interface.name}(');
 
     for (var param in constr.parameters) {
       var field = fields.firstOrNullWhere((it) => it.name == param.name);
       // Final fields
       field ??= getters.firstOrNullWhere((it) => it.name == param.name);
       if (field != null) {
+        final bad = _problemWithOptimizedField(field);
+        foundBadFields |= bad;
         if (param.isNamed) {
           code.write('${param.name}: ');
         }
@@ -72,6 +118,8 @@ class ClassBuilder extends Builder {
     // There may still be fields to initialize that were not in the constructor
     // as initializing formals. We do so using cascades.
     for (var field in fields) {
+      final bad = _problemWithOptimizedField(field);
+      foundBadFields |= bad;
       code.write('..${field.name} = ');
       code.writeln(_value(
         field.type,
@@ -81,6 +129,8 @@ class ClassBuilder extends Builder {
     }
 
     code.writeln(';');
+
+    check(!foundBadFields, 'Problem with ${interface.name} fields');
 
     return code.toString();
   }
@@ -93,7 +143,9 @@ class ClassBuilder extends Builder {
 
   String _cast(DartType type, String variable) {
     var suffix = _suffixFromType(type);
-    if (hiveListChecker.isAssignableFromType(type)) {
+    if (setChecker.isAssignableFromType(type)) {
+      return '($variable as Set$suffix)${_castIterable(type)}';
+    } else if (hiveListChecker.isAssignableFromType(type)) {
       return '($variable as HiveList$suffix)$suffix.castHiveList()';
     } else if (iterableChecker.isAssignableFromType(type) &&
         !isUint8List(type)) {
@@ -153,27 +205,62 @@ class ClassBuilder extends Builder {
   @override
   String buildWrite() {
     var code = StringBuffer();
-    code.writeln('writer');
-    code.writeln('..writeByte(${getters.length})');
-    for (var field in getters) {
-      var value = _convertIterable(field.type, 'obj.${field.name}');
+    final writers = getters.where((g) => !g.isDeprecated).toList();
+    if (isOptimized) {
+      code.writeln('final Map<int, dynamic> fields = {');
+      for (final field in writers) {
+        var value = _convertIterable(field.type, 'obj.${field.name}');
+        final String? condition;
+        if (!field.isOptimized) {
+          condition = null;
+        }
+        else if (field.type.nullabilitySuffix == NullabilitySuffix.question) {
+          condition = '$value != null';
+        }
+        else if (field.type.isDartCoreBool) {
+          condition = '$value';
+        }
+        else if (field.type.isDartCoreList) {
+          condition = '$value.isNotEmpty';
+        }
+        else {
+          throw HiveError('No optimization strategy defined for ${field.type}');
+        }
+        if (condition != null) {
+          code.writeln('if ($condition) ${field.index}: $value,');
+        }
+        else {
+          code.writeln('${field.index}: $value,');
+        }
+      }
       code.writeln('''
-      ..writeByte(${field.index})
-      ..write($value)''');
+      };
+      writer.writeByte(fields.length);
+      for (final MapEntry<int, dynamic> entry in fields.entries) {
+        writer..writeByte(entry.key)..write(entry.value);
+      }''');
     }
-    code.writeln(';');
+    else {
+      code.writeln('writer..writeByte(${writers.length})');
+      for (var field in writers) {
+        var value = _convertIterable(field.type, 'obj.${field.name}');
+        code.writeln('''
+        ..writeByte(${field.index})
+        ..write($value)''');
+      }
+      code.writeln(';');
+    }
 
     return code.toString();
   }
 
   String _convertIterable(DartType type, String accessor) {
-    if (listChecker.isAssignableFromType(type)) {
+    if (listChecker.isAssignableFromType(type) ||
+        setChecker.isAssignableFromType(type)) {
       return accessor;
     } else
-    // Using assignable because Set? and Iterable? are not exactly Set and
-    // Iterable
-    if (setChecker.isAssignableFromType(type) ||
-        iterableChecker.isAssignableFromType(type)) {
+    // Using assignable because Iterable? is not exactly Iterable
+    if (iterableChecker.isAssignableFromType(type)) {
       var suffix = _accessorSuffixFromType(type);
       return '$accessor$suffix.toList()';
     } else {

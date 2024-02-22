@@ -22,5 +22,18 @@ class HiveField {
   /// ```
   final dynamic defaultValue;
 
-  const HiveField(this.index, {this.defaultValue});
+  final FieldMerger<dynamic>? merger;
+
+  // Whether it should be read only and not written to disk
+  final bool isDeprecated;
+
+  // Whether it should not be written to disk if null
+  final bool isOptimized;
+
+  const HiveField(this.index, {
+    this.defaultValue,
+    this.merger,
+    this.isDeprecated = false,
+    this.isOptimized = false,
+  });
 }

@@ -1,7 +1,7 @@
 import 'package:hive/hive.dart';
 
 /// Not part of public API
-class IgnoredTypeAdapter<T> implements TypeAdapter<T?> {
+class IgnoredTypeAdapter<T> extends TypeAdapter<T?> {
   const IgnoredTypeAdapter([this.typeId = 0]);
 
   @override
@@ -12,4 +12,7 @@ class IgnoredTypeAdapter<T> implements TypeAdapter<T?> {
 
   @override
   void write(BinaryWriter writer, obj) {}
+
+  @override
+  final fields = const {};
 }

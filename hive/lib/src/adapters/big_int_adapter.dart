@@ -18,4 +18,7 @@ class BigIntAdapter extends TypeAdapter<BigInt> {
     writer.writeByte(intStr.length);
     writer.writeString(intStr, writeByteCount: false);
   }
+
+  @override
+  final fields = const {};
 }

@@ -86,9 +86,19 @@ abstract class HiveInterface implements TypeRegistry {
   /// Checks if a box exists
   Future<bool> boxExists(String name, {String? path});
 
+  MergeResult<T> merge<T extends Object>({
+    required FieldMerger<T> merger,
+    required T yours,
+    required T theirs,
+    T? base,
+    List<String> skipPaths = const []
+  });
+
   dynamic decode(Uint8List bytes);
 
   Uint8List encode(dynamic value);
+
+  String encodeJson(dynamic value);
 
   /// Clears all registered adapters.
   ///

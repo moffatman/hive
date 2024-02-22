@@ -27,6 +27,9 @@ class _NullTypeRegistry implements TypeRegistryImpl {
   Never findAdapterForTypeId(int typeId) => throw UnimplementedError();
 
   @override
+  Never findAdapterForPublicTypeId(int typeId) => throw UnimplementedError();
+
+  @override
   Never findAdapterForValue(value) => throw UnimplementedError();
 
   @override
@@ -73,6 +76,11 @@ class TypeRegistryImpl implements TypeRegistry {
   /// Not part of public API
   ResolvedAdapter? findAdapterForTypeId(int typeId) {
     return _typeAdapters[typeId];
+  }
+
+  /// Not part of public API
+  ResolvedAdapter? findAdapterForPublicTypeId(int typeId) {
+    return _typeAdapters[typeId + reservedTypeIds];
   }
 
   @override

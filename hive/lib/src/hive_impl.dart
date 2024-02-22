@@ -306,6 +306,18 @@ class HiveImpl extends TypeRegistryImpl implements HiveInterface {
     var lowerCaseName = name.toLowerCase();
     return await manager.boxExists(lowerCaseName, path ?? homePath, collection);
   }
+
+  @override
+  dynamic decode(Uint8List bytes) {
+    return BinaryReaderImpl(bytes, this).read();
+  }
+
+  @override
+  Uint8List encode(dynamic value) {
+    final writer = BinaryWriterImpl(this);
+    writer.write(value);
+    return writer.toBytes();
+  }
 }
 
 /// tiny helper for map key management...

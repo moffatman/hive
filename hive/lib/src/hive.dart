@@ -86,6 +86,10 @@ abstract class HiveInterface implements TypeRegistry {
   /// Checks if a box exists
   Future<bool> boxExists(String name, {String? path});
 
+  dynamic decode(Uint8List bytes);
+
+  Uint8List encode(dynamic value);
+
   /// Clears all registered adapters.
   ///
   /// To register an adapter use [registerAdapter].

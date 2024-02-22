@@ -74,7 +74,7 @@ void main() {
 					final yours = [1, 2, 3, 4, 5];
 					final theirs = [1, 2, 4];
 					final base = [1, 2, 3, 4];
-					final conflicts = Hive.merge<List<int>>(
+					final result = Hive.merge<List<int>>(
 						merger: SetLikePrimitiveListMerger(),
 						yours: yours,
 						theirs: theirs,
@@ -82,19 +82,19 @@ void main() {
 					);
 					expect(yours, [1, 2, 4, 5]);
 					expect(theirs, [1, 2, 4, 5]);
-					expect(conflicts, isEmpty);
+					expect(result.conflicts, isEmpty);
 				});
 				test('no base', () {
 					final yours = [1, 2, 3, 4, 5];
 					final theirs = [1, 2, 4];
-					final conflicts = Hive.merge<List<int>>(
+					final result = Hive.merge<List<int>>(
 						merger: SetLikePrimitiveListMerger(),
 						yours: yours,
 						theirs: theirs
 					);
 					expect(yours, [1, 2, 3, 4, 5]);
 					expect(theirs, [1, 2, 4, 3, 5]);
-					expect(conflicts, isEmpty);
+					expect(result.conflicts, isEmpty);
 				});
 			});
 			group('uniqueValuesPositioned', () {
@@ -102,7 +102,7 @@ void main() {
 					final yours = [1, 2, 3, 4, 5];
 					final theirs = [4, 1, 2];
 					final base = [1, 2, 3, 4];
-					final conflicts = Hive.merge<List<int>>(
+					final result = Hive.merge<List<int>>(
 						merger: OrderedSetLikePrimitiveListMerger(),
 						yours: yours,
 						theirs: theirs,
@@ -110,19 +110,19 @@ void main() {
 					);
 					expect(yours, [4, 1, 2, 5]);
 					expect(theirs, [4, 1, 2, 5]);
-					expect(conflicts, isEmpty);
+					expect(result.conflicts, isEmpty);
 				});
 				test('no base', () {
 					final yours = [1, 2, 3, 4, 5];
 					final theirs = [4, 1, 2];
-					final conflicts = Hive.merge<List<int>>(
+					final result = Hive.merge<List<int>>(
 						merger: OrderedSetLikePrimitiveListMerger(),
 						yours: yours,
 						theirs: theirs
 					);
 					expect(yours, [1, 2, 3, 4, 5]);
 					expect(theirs, [1, 2, 3, 4, 5]);
-					expect(conflicts, isEmpty);
+					expect(result.conflicts, isEmpty);
 				});
 			});
 		});
@@ -131,7 +131,7 @@ void main() {
 				final yours = {1: 'one', 2: 'two', 4: 'four'};
 				final theirs = {1: 'one', 3: 'three'};
 				final base = {1: 'one', 2: 'two'};
-				final conflicts = Hive.merge(
+				final result = Hive.merge(
 					merger: MapMerger<int, String>(PrimitiveMerger()),
 					yours: yours,
 					theirs: theirs,
@@ -139,25 +139,25 @@ void main() {
 				);
 				expect(yours, {1: 'one', 3: 'three', 4: 'four'});
 				expect(theirs, {1: 'one', 3: 'three', 4: 'four'});
-				expect(conflicts, isEmpty);
+				expect(result.conflicts, isEmpty);
 			});
 			test('no base', () {
 				final yours = {1: 'one', 2: 'two', 4: 'four'};
 				final theirs = {1: 'one', 3: 'three'};
-				final conflicts = Hive.merge(
+				final result = Hive.merge(
 					merger: MapMerger<int, String>(PrimitiveMerger()),
 					yours: yours,
 					theirs: theirs
 				);
 				expect(yours, {1: 'one', 2: 'two', 3: 'three', 4: 'four'});
 				expect(theirs, {1: 'one', 2: 'two', 3: 'three', 4: 'four'});
-				expect(conflicts, isEmpty);
+				expect(result.conflicts, isEmpty);
 			});
 			test('skip', () {
 				final yours = {1: 'one', 2: 'NOT TWO', 3: 'three'};
 				final theirs = {1: 'one', 2: 'two', 3: 'three'};
 				final base = {1: 'one', 2: 'two', 3: 'three'};
-				final conflicts = Hive.merge(
+				final result = Hive.merge(
 					merger: MapMerger<int, String>(PrimitiveMerger()),
 					yours: yours,
 					theirs: theirs,
@@ -166,7 +166,7 @@ void main() {
 				);
 				expect(yours, {1: 'one', 2: 'NOT TWO', 3: 'three'});
 				expect(theirs, {1: 'one', 2: 'two', 3: 'three'});
-				expect(conflicts, isEmpty);
+				expect(result.conflicts, isEmpty);
 			});
 		});
 		group('Adapted', () {
@@ -187,7 +187,7 @@ void main() {
 					value1: 'value1',
 					value2: 'value2'
 				);
-				final conflicts = Hive.merge(
+				final result = Hive.merge(
 					merger: ResolvedAdaptedMerger(TestTypeAdapter()),
 					yours: yours,
 					theirs: theirs,
@@ -199,7 +199,7 @@ void main() {
 				expect(theirs.name, equals('name1'));
 				expect(theirs.value1, equals('value1a'));
 				expect(theirs.value2, equals('value2a'));
-				expect(conflicts, isEmpty);
+				expect(result.conflicts, isEmpty);
 			});
 			test('no base', () {
 				final yours = TestType(

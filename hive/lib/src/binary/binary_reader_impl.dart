@@ -214,6 +214,16 @@ class BinaryReaderImpl extends BinaryReader {
     return map;
   }
 
+  @override
+  Set readSet([int? length]) {
+    length ??= readUint32();
+    var set = <dynamic>{};
+    for (var i = 0; i < length; i++) {
+      set.add(read());
+    }
+    return set;
+  }
+
   /// Not part of public API
   dynamic readKey() {
     var keyType = readByte();
@@ -319,6 +329,12 @@ class BinaryReaderImpl extends BinaryReader {
         return readMap();
       case FrameValueType.hiveListT:
         return readHiveList();
+      case FrameValueType.setT:
+        return readSet();
+      case FrameValueType.boolTrueT:
+        return true;
+      case FrameValueType.boolFalseT:
+        return false;
       default:
         var resolved = _typeRegistry.findAdapterForTypeId(typeId);
         if (resolved == null) {

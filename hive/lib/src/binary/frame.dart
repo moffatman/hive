@@ -153,4 +153,13 @@ class FrameValueType {
 
   /// List<HiveObject>
   static const hiveListT = 12;
+
+  /// Set<dynamic>
+  static const setT = 13;
+
+  /// true
+  static const boolTrueT = 14;
+
+  /// false
+  static const boolFalseT = 15;
 }

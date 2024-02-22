@@ -89,6 +89,11 @@ abstract class BinaryReader {
   /// If [length] is not provided, it is read first.
   Map readMap([int? length]);
 
+  /// Read a set with [length] entries.
+  ///
+  /// If [length] is not provided, it is read first.
+  Set readSet([int? length]);
+
   /// Read and decode any value.
   ///
   /// If [typeId] is not provided, it is read first.

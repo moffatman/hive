@@ -238,6 +238,18 @@ class BinaryWriterImpl extends BinaryWriter {
     }
   }
 
+  @override
+  void writeSet(Set<dynamic> set, {bool writeLength = true}) {
+    ArgumentError.checkNotNull(set);
+
+    if (writeLength) {
+      writeUint32(set.length);
+    }
+    for (final val in set) {
+      write(val);
+    }
+  }
+
   /// Not part of public API
   void writeKey(dynamic key) {
     ArgumentError.checkNotNull(key);
@@ -318,9 +330,8 @@ class BinaryWriterImpl extends BinaryWriter {
       writeDouble(value);
     } else if (value is bool) {
       if (writeTypeId) {
-        writeByte(FrameValueType.boolT);
+        writeByte(value ? FrameValueType.boolTrueT : FrameValueType.boolFalseT);
       }
-      writeBool(value);
     } else if (value is String) {
       if (writeTypeId) {
         writeByte(FrameValueType.stringT);
@@ -333,6 +344,11 @@ class BinaryWriterImpl extends BinaryWriter {
         writeByte(FrameValueType.mapT);
       }
       writeMap(value);
+    } else if (value is Set) {
+      if (writeTypeId) {
+        writeByte(FrameValueType.setT);
+      }
+      writeSet(value);
     } else {
       var resolved = _typeRegistry.findAdapterForValue(value);
       if (resolved == null) {

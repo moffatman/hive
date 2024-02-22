@@ -58,6 +58,9 @@ abstract class BinaryWriter {
   /// Write a [map].
   void writeMap(Map map, {bool writeLength = true});
 
+  /// Write a [set].
+  void writeSet(Set set, {bool writeLength = true});
+
   /// Write a [HiveList].
   void writeHiveList(HiveList list, {bool writeLength = true});
 

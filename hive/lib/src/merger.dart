@@ -102,12 +102,13 @@ abstract class MergerController<T> {
 		T theirParent,
 		T? baseParent
 	) {
-		if (skips.any((s) => s.length == 1 && s.first == field.fieldName)) {
+		if (skips.any(
+			(s) => s.length == 1 && (s.first == '*' || s.first == field.fieldName))) {
 			// Skip it
 			return true;
 		}
 		final childSkips = skips
-			.where((s) => s.first == field.fieldName)
+			.where((s) => s.first == '*' || s.first == field.fieldName)
 			.map((s) => s.sublist(1))
 			.toList();
 		final merger = switch (field) {
@@ -289,12 +290,13 @@ class UnwrappingMergerController<T extends Object>
 		T theirParent,
 		T? baseParent
 	) {
-		if (skips.any((s) => s.length == 1 && s.first == field.fieldName)) {
+		if (skips.any(
+			(s) => s.length == 1 && (s.first == '*' || s.first == field.fieldName))) {
 			// Skip it
 			return true;
 		}
 		final childSkips = skips
-			.where((s) => s.first == field.fieldName)
+			.where((s) => s.first == '*' || s.first == field.fieldName)
 			.map((s) => s.sublist(1))
 			.toList();
 		final merger = switch (field) {

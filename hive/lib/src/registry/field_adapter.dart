@@ -54,12 +54,18 @@ abstract class _ValueFieldMerger<T> extends FieldMerger<T> {
       // No match but also no ability to write
       return false;
     }
-    if (base != null && valueEquals(theirs, base)) {
+    if (
+      (base != null && valueEquals(theirs, base)) ||
+      (base == null && theirs == null && yours != null)
+    ) {
       // You changed yours
       merger.writeTheirs(yours);
       return true;
     }
-    if (base != null && valueEquals(yours, base)) {
+    if (
+      (base != null && valueEquals(yours, base)) ||
+      (base == null && yours == null && theirs != null)
+    ) {
       // They changed theirs
       merger.writeYours(theirs);
       return true;

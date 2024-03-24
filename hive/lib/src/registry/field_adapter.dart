@@ -447,7 +447,12 @@ class MapLikeListMerger<T, Proxy>
           },
           fieldName: '[$yourEntry]',
           merger: childMerger
-        ).merge(merger, yours, theirs, base);
+        ).merge(
+          merger,
+          yours,
+          theirs,
+          (baseMap?.containsKey(yourEntry) ?? false) ? base : null
+        );
         theirsCopy.remove(yourEntry);
       }
       else if (baseProxy?.contains(yourEntry) ?? false) {

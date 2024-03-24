@@ -49,7 +49,7 @@ class MergeConflict<Ancestor, T> extends MergePath<Ancestor, T> {
 
 	void set(Ancestor a, T value) {
 		dynamic p = a;
-		for (int i = 0; i < stack.length - 2; i++) {
+		for (int i = 0; i < stack.length - 1; i++) {
 			p = stack[i].dynamicGetter(p);
 		}
 		final void Function(dynamic, T) setter = switch (stack.last) {

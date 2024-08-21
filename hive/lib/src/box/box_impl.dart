@@ -111,6 +111,10 @@ class BoxImpl<E> extends BoxBaseImpl<E> implements Box<E> {
   }
 
   @override
+  Iterable<MapEntry<dynamic, E>> get mapEntries =>
+    keystore.frames.map((f) => MapEntry(f.key, f.value as E));
+
+  @override
   Future<void> flush() async {
     await backend.flush();
   }

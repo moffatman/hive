@@ -38,4 +38,7 @@ abstract class Box<E> implements BoxBase<E> {
 
   /// Returns a map which contains all key - value pairs of the box.
   Map<dynamic, E> toMap();
+
+  /// Returns an iterable of key - value pairs.
+  Iterable<MapEntry<dynamic, E>> get mapEntries;
 }

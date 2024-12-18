@@ -224,4 +224,7 @@ class StorageBackendJs extends StorageBackend {
 
   @override
   Future<void> flush() => Future.value();
+  
+  @override
+  Future<T> protectWrite<T>(Future<T> Function() cb) => cb();
 }

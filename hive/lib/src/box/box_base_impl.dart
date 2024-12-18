@@ -328,4 +328,7 @@ class _NullBoxBase<E> implements BoxBase<E> {
 
   @override
   Never flush() => throw UnimplementedError();
+  
+  @override
+  Future<T> protectWrite<T>(Future<T> Function() cb) => cb();
 }

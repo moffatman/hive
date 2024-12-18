@@ -39,6 +39,9 @@ abstract class StorageBackend {
 
   /// Flush all changes to disk
   Future<void> flush();
+
+  /// Run a callback with write lock on the database
+  Future<T> protectWrite<T>(Future<T> Function() cb);
 }
 
 /// Abstract database manager

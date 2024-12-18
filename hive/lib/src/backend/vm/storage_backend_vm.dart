@@ -240,4 +240,13 @@ class StorageBackendVm extends StorageBackend {
       await writeRaf.flush();
     });
   }
+
+  @override
+  Future<T> protectWrite<T>(Future<T> Function() cb) {
+    return _sync.syncReadWrite(() async {
+      // Sync to be safe
+      await writeRaf.flush();
+      return await cb();
+    });
+  }
 }

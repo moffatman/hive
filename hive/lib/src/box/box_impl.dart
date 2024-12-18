@@ -118,4 +118,9 @@ class BoxImpl<E> extends BoxBaseImpl<E> implements Box<E> {
   Future<void> flush() async {
     await backend.flush();
   }
+  
+  @override
+  Future<T> protectWrite<T>(Future<T> Function() cb) {
+    return backend.protectWrite(cb);
+  }
 }

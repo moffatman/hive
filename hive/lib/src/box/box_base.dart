@@ -162,4 +162,7 @@ abstract class BoxBase<E> {
 
   /// Flushes all pending changes of the box to disk.
   Future<void> flush();
+
+  /// Run a callback with write lock on the box
+  Future<T> protectWrite<T>(Future<T> Function() cb);
 }

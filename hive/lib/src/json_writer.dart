@@ -33,9 +33,18 @@ class JsonWriter {
 				for (final entry in object.entries)
 					_toEncodable(entry.key).toString(): _toEncodable(entry.value)
 			};
-    } else if (object is Set) {
+    } else if (object is MapEntry) {
+			return {
+				'_type': object.runtimeType.toString(),
+				'key': _toEncodable(object.key),
+				'value': _toEncodable(object.value)
+			};
+		} else if (object is Set) {
 			// Who cares, just throw away set-ness
-			return object.toList();
+			return {
+				'_type': object.runtimeType.toString(),
+				'elements': object.toList()
+			};
 		}
 		final resolved = _typeRegistry.findAdapterForValue(object);
 		if (resolved == null) {
@@ -47,6 +56,7 @@ class JsonWriter {
 			return object.toString();
 		}
 		return {
+			'_type': resolved.runtimeType.toString(),
 			for (final field in resolved.adapter.fields.values)
 				field.fieldName: _toEncodable(field.dynamicGetter(object))
 		};
@@ -58,6 +68,9 @@ class JsonWriter {
 			print(e);
 			print(e.unsupportedObject);
 			_dumpJsonError(e.cause);
+		}
+		else {
+			print(e);
 		}
 	}
 

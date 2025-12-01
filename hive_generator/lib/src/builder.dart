@@ -26,14 +26,14 @@ class AdapterField {
   );
 
 
-  static final _stringChecker = const TypeChecker.fromRuntime(String);
-  static final _numChecker = const TypeChecker.fromRuntime(num);
-  static final _boolChecker = const TypeChecker.fromRuntime(bool);
-  static final _enumChecker = const TypeChecker.fromRuntime(Enum);
-  static final _dateTimeChecker = const TypeChecker.fromRuntime(DateTime);
-  static final _listChecker = const TypeChecker.fromRuntime(List);
-  static final _mapChecker = const TypeChecker.fromRuntime(Map);
-  static final _setChecker = const TypeChecker.fromRuntime(Set);
+  static final _stringChecker = const TypeChecker.typeNamed(String);
+  static final _numChecker = const TypeChecker.typeNamed(num);
+  static final _boolChecker = const TypeChecker.typeNamed(bool);
+  static final _enumChecker = const TypeChecker.typeNamed(Enum);
+  static final _dateTimeChecker = const TypeChecker.typeNamed(DateTime);
+  static final _listChecker = const TypeChecker.typeNamed(List);
+  static final _mapChecker = const TypeChecker.typeNamed(Map);
+  static final _setChecker = const TypeChecker.typeNamed(Set);
 
   static bool _isPrimitive(DartType type) =>
     _stringChecker.isAssignableFromType(type)

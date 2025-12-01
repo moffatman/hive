@@ -3,7 +3,7 @@ import 'package:analyzer/dart/element/element.dart';
 import 'package:hive/hive.dart';
 import 'package:source_gen/source_gen.dart';
 
-final _hiveFieldChecker = const TypeChecker.fromRuntime(HiveField);
+final _hiveFieldChecker = const TypeChecker.typeNamed(HiveField);
 
 class HiveFieldInfo {
   HiveFieldInfo(
@@ -29,7 +29,7 @@ HiveFieldInfo? getHiveFieldAnn(Element element) {
   /// generated variables, which will be Null at generation time here if using
   /// normal ConstReader method.
   String? merger;
-  for (final metadata in element.metadata) {
+  for (final metadata in element.metadata.annotations) {
     final source = metadata.toSource();
     if (!source.startsWith('@HiveField')) {
       continue;

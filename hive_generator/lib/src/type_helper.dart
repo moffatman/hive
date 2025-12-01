@@ -57,7 +57,7 @@ String literalToString(
   } else if (object.type is FunctionType) {
     badType = 'Function';
   } else if (!reader.isLiteral) {
-    badType = object.type!.element2!.name;
+    badType = object.type!.element!.name;
   }
 
   if (badType != null) {

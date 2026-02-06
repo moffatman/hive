@@ -77,7 +77,10 @@ HiveFieldInfo? getHiveFieldAnn(Element element) {
 bool isLibraryNNBD(Element element) {
   final dartVersion = element.library!.languageVersion.effective;
   // Libraries with the dart version >= 2.12 are nnbd
-  if (dartVersion.major >= 2 && dartVersion.minor >= 12) {
+  if (
+    (dartVersion.major == 2 && dartVersion.minor >= 12)
+    || dartVersion.major > 2
+  ) {
     return true;
   } else {
     return false;

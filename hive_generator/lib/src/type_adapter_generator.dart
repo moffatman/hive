@@ -21,6 +21,12 @@ extension _WithCapitalizedFirstLetter on AdapterField {
     }
     return 'set${name.substring(0, 1).toUpperCase()}${name.substring(1)}';
   }
+  String get kName {
+    if (name.startsWith('_')) {
+      return '_k${name.substring(1, 2).toUpperCase()}${name.substring(2)}';
+    }
+    return 'k${name.substring(0, 1).toUpperCase()}${name.substring(1)}';
+  }
 }
 
 class TypeAdapterGenerator extends GeneratorForAnnotation<HiveType> {
@@ -76,6 +82,8 @@ class TypeAdapterGenerator extends GeneratorForAnnotation<HiveType> {
           'static void ${getter.setterName}'
           '(${interface.name} x, ${getter.type} v) => x.${getter.name} = v;');
         }
+        fieldMetadata.writeln('static const int ${getter.kName}'
+                              ' = ${getter.index};');
         fieldMetadata.write(
           '  static const ${getter.name} = ');
         if (getter.isReadOnly) {
@@ -90,7 +98,7 @@ class TypeAdapterGenerator extends GeneratorForAnnotation<HiveType> {
           '    setter: ${getter.setterName},');
         }
         fieldMetadata.writeln(
-          '    fieldNumber: ${getter.index},');
+          '    fieldNumber: ${getter.kName},');
         fieldMetadata.writeln(
           '    fieldName: \'${getter.name}\',');
         fieldMetadata.writeln(

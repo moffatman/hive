@@ -23,13 +23,13 @@ class LazyBoxImpl<E> extends BoxBaseImpl<E> implements LazyBox<E> {
   final bool lazy = true;
 
   @override
-  Future<E?> get(dynamic key, {E? defaultValue}) async {
+  Future<E?> get(dynamic key, {E? defaultValue, bool syncIO = false}) async {
     checkOpen();
 
     var frame = keystore.get(key);
 
     if (frame != null) {
-      var value = await backend.readValue(frame);
+      var value = await backend.readValue(frame, syncIO: syncIO);
       if (value is HiveObjectMixin) {
         value.init(key, this);
       }
@@ -43,8 +43,8 @@ class LazyBoxImpl<E> extends BoxBaseImpl<E> implements LazyBox<E> {
   }
 
   @override
-  Future<E?> getAt(int index) {
-    return get(keystore.keyAt(index));
+  Future<E?> getAt(int index, {bool syncIO = false}) {
+    return get(keystore.keyAt(index), syncIO: syncIO);
   }
 
   @override

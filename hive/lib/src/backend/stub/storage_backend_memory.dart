@@ -37,14 +37,14 @@ class StorageBackendMemory extends StorageBackend {
   final bool supportsCompaction = false;
 
   @override
-  Future<void> initialize(
-      TypeRegistry registry, Keystore keystore, bool lazy) async {
+  Future<void> initialize(TypeRegistry registry, Keystore keystore,
+                          bool lazy, {bool syncIO = false}) async {
     _typeRegistry = registry;
     await _randomAccessBuffer.recoveryCheck(registry, keystore, _cipher);
   }
 
   @override
-  Future<dynamic> readValue(Frame frame) async {
+  Future<dynamic> readValue(Frame frame, {bool syncIO = false}) async {
     return _randomAccessBuffer.read(frame, _typeRegistry!, _cipher);
   }
 

@@ -74,8 +74,8 @@ class StorageBackendVm extends StorageBackend {
   }
 
   @override
-  Future<void> initialize(
-      TypeRegistry registry, Keystore keystore, bool lazy) async {
+  Future<void> initialize(TypeRegistry registry, Keystore keystore,
+                          bool lazy, {bool syncIO = false}) async {
     this.registry = registry;
 
     lockRaf = await _lockFile.open(mode: FileMode.write);
@@ -86,9 +86,11 @@ class StorageBackendVm extends StorageBackend {
     int recoveryOffset;
     if (!lazy) {
       recoveryOffset =
-          await _frameHelper.framesFromFile(path, keystore, registry, _cipher);
+          await _frameHelper.framesFromFile(path, keystore, registry, _cipher,
+                                            syncIO: syncIO);
     } else {
-      recoveryOffset = await _frameHelper.keysFromFile(path, keystore, _cipher);
+      recoveryOffset = await _frameHelper.keysFromFile(path, keystore,
+                                                       syncIO: syncIO);
     }
 
     if (recoveryOffset != -1) {
@@ -104,22 +106,24 @@ class StorageBackendVm extends StorageBackend {
   }
 
   @override
-  Future<dynamic> readValue(Frame frame) async {
-    return await _sync.syncRead(() async {
+  Future<dynamic> readValue(Frame frame, {bool syncIO = false}) async {
+    final bytes = await _sync.syncRead(syncIO ? () async {
+      readRaf.setPositionSync(frame.offset);
+      return readRaf.readSync(frame.length!);
+    } : () async {
       await readRaf.setPosition(frame.offset);
-
-      var bytes = await readRaf.read(frame.length!);
-
-      var reader = BinaryReaderImpl(bytes, registry);
-      var readFrame = await reader.readFrame(cipher: _cipher, lazy: false);
-
-      if (readFrame == null) {
-        throw HiveError(
-            'Could not read value from box. Maybe your box is corrupted.');
-      }
-
-      return readFrame.value;
+      return await readRaf.read(frame.length!);
     });
+
+    var reader = BinaryReaderImpl(bytes, registry);
+    var readFrame = await reader.readFrame(cipher: _cipher, lazy: false);
+
+    if (readFrame == null) {
+      throw HiveError(
+          'Could not read value from box. Maybe your box is corrupted.');
+    }
+
+    return readFrame.value;
   }
 
   @override

@@ -92,8 +92,8 @@ abstract class BoxBaseImpl<E> implements BoxBase<E> {
   }
 
   /// Not part of public API
-  Future<void> initialize() {
-    return backend.initialize(hive, keystore, lazy);
+  Future<void> initialize({bool syncIO = false}) {
+    return backend.initialize(hive, keystore, lazy, syncIO: syncIO);
   }
 
   @override

@@ -2,11 +2,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:hive/hive.dart';
-import 'package:hive/src/binary/binary_reader_impl.dart';
+import 'package:hive/src/binary/frame.dart';
 import 'package:hive/src/binary/frame_helper.dart';
 import 'package:hive/src/box/keystore.dart';
-import 'package:hive/src/io/buffered_file_reader.dart';
-import 'package:hive/src/registry/type_registry_impl.dart';
 import 'package:meta/meta.dart';
 
 /// Not part of public API
@@ -19,77 +17,90 @@ class FrameIoHelper extends FrameHelper {
 
   /// Not part of public API
   @visibleForTesting
-  Future<List<int>> readFile(String path) {
+  Future<Uint8List> readFile(String path) {
     return File(path).readAsBytes();
   }
 
   /// Not part of public API
-  Future<int> keysFromFile(
-      String path, Keystore keystore, HiveCipher? cipher) async {
-    var raf = await openFile(path);
-    var fileReader = BufferedFileReader(raf);
+  Uint8List readFileSync(String path) {
+    return File(path).readAsBytesSync();
+  }
+
+  /// Not part of public API
+  Future<int> keysFromFile(String path, Keystore keystore,
+                           {bool syncIO = false}) async {
+    final file = syncIO ? File(path).openSync() : await File(path).open();
     try {
-      return await _KeyReader(fileReader).readKeys(keystore, cipher);
+      return await _KeyReader(file).readKeys(keystore, syncIO: syncIO);
     } finally {
-      await raf.close();
+      syncIO ? file.closeSync() : await file.close();
     }
   }
 
   /// Not part of public API
   Future<int> framesFromFile(String path, Keystore keystore,
-      TypeRegistry registry, HiveCipher? cipher) async {
-    var bytes = await readFile(path);
-    return framesFromBytes(bytes as Uint8List, keystore, registry, cipher);
+      TypeRegistry registry, HiveCipher? cipher, {bool syncIO = false}) async {
+    var bytes = syncIO ? readFileSync(path) : await readFile(path);
+    return framesFromBytes(bytes, keystore, registry, cipher);
   }
 }
 
 class _KeyReader {
-  final BufferedFileReader fileReader;
+  final RandomAccessFile file;
 
-  late BinaryReaderImpl _reader;
+  _KeyReader(this.file);
 
-  _KeyReader(this.fileReader);
-
-  Future<int> readKeys(Keystore keystore, HiveCipher? cipher) async {
-    await _load(4);
+  Future<int> readKeys(Keystore keystore, {bool syncIO = false}) async {
+    int position = 0;
+    final length = syncIO ? file.lengthSync() : await file.length();
     while (true) {
-      var frameOffset = fileReader.offset;
+      var frameOffset = position;
 
-      if (_reader.availableBytes < 4) {
-        var available = await _load(4);
-        if (available == 0) {
-          break;
-        } else if (available < 4) {
-          return frameOffset;
-        }
+      final bytes = syncIO ? file.readSync(4) : await file.read(4);
+      if (bytes.isEmpty) {
+        // End of file
+        break;
+      }
+      if (bytes.length < 4) {
+        return frameOffset;
       }
 
-      var frameLength = _reader.peekUint32();
-      if (_reader.availableBytes < frameLength) {
-        var available = await _load(frameLength);
-        if (available < frameLength) return frameOffset;
+      
+      final frameLength =
+          bytes[0] | bytes[1] << 8 | bytes[2] << 16 | bytes[3] << 24;
+      if (length < (frameOffset + frameLength)) {
+        return frameOffset;
       }
 
-      var frame = await _reader.readFrame(
-        cipher: cipher,
-        lazy: true,
-        frameOffset: frameOffset,
-      );
-      if (frame == null) return frameOffset;
+      dynamic key;
+      // Key can be at max string length 255
+      final len = frameLength.clamp(0, 257);
+      final lookahead = syncIO ? file.readSync(len) : await file.read(len);
+      final keyType = lookahead[0];
+      if (keyType == FrameKeyType.uintT) {
+        key = lookahead[1]
+            | lookahead[2] << 8
+            | lookahead[3] << 16
+            | lookahead[4] << 24;
+      }
+      else if (keyType == FrameKeyType.utf8StringT) {
+        final length = lookahead[1];
+        key = BinaryReader.utf8Decoder.convert(lookahead, 2, 2 + length);
+      }
+      else {
+        print('Unsupported key type $keyType. Frame might be corrupted.');
+        return frameOffset;
+      }
 
-      keystore.insert(frame, notify: false);
+      keystore.insert(Frame.lazy(
+        key, length: frameLength, offset: frameOffset
+      ), notify: false);
 
-      fileReader.skip(frameLength);
+      position = frameOffset + frameLength;
+      syncIO ? file.setPositionSync(position)
+             : await file.setPosition(position);
     }
 
     return -1;
-  }
-
-  Future<int> _load(int bytes) async {
-    var loadedBytes = await fileReader.loadBytes(bytes);
-    var buffer = fileReader.peekBytes(loadedBytes);
-    _reader = BinaryReaderImpl(buffer, TypeRegistryImpl.nullImpl);
-
-    return loadedBytes;
   }
 }

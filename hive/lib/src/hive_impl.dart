@@ -75,6 +75,7 @@ class HiveImpl extends TypeRegistryImpl implements HiveInterface {
     String? path,
     StorageBackend? backend,
     String? collection,
+    bool syncIO,
   ) async {
     assert(path == null || backend == null);
     assert(name.length <= 255 && name.isAscii,
@@ -110,7 +111,7 @@ class HiveImpl extends TypeRegistryImpl implements HiveInterface {
           newBox = BoxImpl<E>(this, name, comparator, compaction, backend);
         }
 
-        await newBox.initialize();
+        await newBox.initialize(syncIO: syncIO);
         _boxes[TupleBoxKey(name, collection)] = newBox;
 
         completer.complete();
@@ -139,6 +140,7 @@ class HiveImpl extends TypeRegistryImpl implements HiveInterface {
     StorageBackend? backend,
     String? collection,
     @Deprecated('Use encryptionCipher instead') List<int>? encryptionKey,
+    bool syncIO = false,
   }) async {
     if (encryptionKey != null) {
       encryptionCipher = HiveAesCipher(encryptionKey);
@@ -146,8 +148,10 @@ class HiveImpl extends TypeRegistryImpl implements HiveInterface {
     if (backend == null && bytes != null) {
       backend = StorageBackendMemory(bytes, encryptionCipher);
     }
-    return await _openBox<E>(name, false, encryptionCipher, keyComparator,
-        compactionStrategy, crashRecovery, path, backend, collection) as Box<E>;
+    return await _openBox<E>(
+      name, false, encryptionCipher, keyComparator,
+      compactionStrategy, crashRecovery, path, backend, collection, syncIO
+    ) as Box<E>;
   }
 
   @override
@@ -161,6 +165,7 @@ class HiveImpl extends TypeRegistryImpl implements HiveInterface {
     String? collection,
     @Deprecated('Use encryptionCipher instead') List<int>? encryptionKey,
     StorageBackend? backend,
+    bool syncIO = false,
   }) async {
     if (encryptionKey != null) {
       encryptionCipher = HiveAesCipher(encryptionKey);
@@ -174,7 +179,8 @@ class HiveImpl extends TypeRegistryImpl implements HiveInterface {
         crashRecovery,
         path,
         backend,
-        collection) as LazyBox<E>;
+        collection,
+        syncIO) as LazyBox<E>;
   }
 
   /*Future<Map<String, LazyBox>> openBoxCollection(

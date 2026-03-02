@@ -46,10 +46,7 @@ abstract class BinaryReader {
   /// Read [byteCount] bytes and decode an UTF-8 String.
   ///
   /// If [byteCount] is not provided, it is read first.
-  String readString([
-    int? byteCount,
-    Converter<List<int>, String> decoder = utf8Decoder,
-  ]);
+  String readString([int? byteCount]);
 
   /// Read a list of bytes with [length].
   ///
@@ -74,10 +71,7 @@ abstract class BinaryReader {
   /// Read a list of Strings with [length].
   ///
   /// If [length] is not provided, it is read first.
-  List<String> readStringList([
-    int? length,
-    Converter<List<int>, String> decoder = utf8Decoder,
-  ]);
+  List<String> readStringList([int? length]);
 
   /// Read a list with [length].
   ///

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:hive/hive.dart';
@@ -128,12 +127,12 @@ class BinaryReaderImpl extends BinaryReader {
   }
 
   @override
-  String readString(
-      [int? byteCount,
-      Converter<List<int>, String> decoder = BinaryReader.utf8Decoder]) {
+  String readString([int? byteCount]) {
     byteCount ??= readUint32();
-    var view = viewBytes(byteCount);
-    return decoder.convert(view);
+    _requireBytes(byteCount);
+    _offset += byteCount;
+    return BinaryReader.utf8Decoder
+              .convert(_buffer, _offset - byteCount, _offset);
   }
 
   @override
@@ -183,13 +182,11 @@ class BinaryReaderImpl extends BinaryReader {
   }
 
   @override
-  List<String> readStringList(
-      [int? length,
-      Converter<List<int>, String> decoder = BinaryReader.utf8Decoder]) {
+  List<String> readStringList([int? length]) {
     length ??= readUint32();
     var list = List<String>.filled(length, '', growable: true);
     for (var i = 0; i < length; i++) {
-      list[i] = readString(null, decoder);
+      list[i] = readString(null);
     }
     return list;
   }
@@ -231,7 +228,10 @@ class BinaryReaderImpl extends BinaryReader {
       return readUint32();
     } else if (keyType == FrameKeyType.utf8StringT) {
       var byteCount = readByte();
-      return BinaryReader.utf8Decoder.convert(viewBytes(byteCount));
+      _requireBytes(byteCount);
+      _offset += byteCount;
+      return BinaryReader.utf8Decoder
+              .convert(_buffer, _offset - byteCount, _offset);
     } else {
       throw HiveError('Unsupported key type. Frame might be corrupted.');
     }

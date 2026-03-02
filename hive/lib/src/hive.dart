@@ -39,6 +39,7 @@ abstract class HiveInterface implements TypeRegistry {
     StorageBackend? backend,
     String? collection,
     @Deprecated('Use encryptionCipher instead') List<int>? encryptionKey,
+    bool syncIO = false,
   });
 
   /// Opens a lazy box.
@@ -55,6 +56,7 @@ abstract class HiveInterface implements TypeRegistry {
     String? collection,
     @Deprecated('Use encryptionCipher instead') List<int>? encryptionKey,
     StorageBackend? backend,
+    bool syncIO = false,
   });
 
   /// Returns a previously opened box.

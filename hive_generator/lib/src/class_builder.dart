@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:analyzer/dart/constant/value.dart';
@@ -57,36 +58,48 @@ class ClassBuilder extends Builder {
 
     var foundBadFields = false;
 
+    final maxFieldNumber = getters.fold(-1, (m, f) => math.max(m, f.index));
+
     var code = StringBuffer();
     code.writeln('final numOfFields = reader.readByte();');
     if (isOptimized) {
       code.writeln('''
-      final Map<int, dynamic> fields;
+      final List<dynamic> fields = List.filled(${maxFieldNumber + 1}, null);
       if (numOfFields == 255) {
         // Dynamic number of fields
-        fields = {};
         while (true) {
           final int fieldId = reader.readByte();
-          fields[fieldId] = reader.read();
+          final dynamic value = reader.read();
+          if (fieldId < fields.length) {
+            fields[fieldId] = value;
+          }
           if (fieldId == 0) {
             break;
           }
         }
       }
       else {
-        fields = <int, dynamic>{
-          for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-        };
+        for (int i = 0; i < numOfFields; i++) {
+          final int fieldId = reader.readByte();
+          final dynamic value = reader.read();
+          if (fieldId < fields.length) {
+            fields[fieldId] = value;
+          }
+        }
       }''');
     }
     else {
       check (getters.every((g) => !g.isOptimized),
         'Optimized fields are only allowed in optimized classes.');
       code.writeln('''
-      final fields = <int, dynamic>{
-        for (int i = 0; i < numOfFields; i++)
-          reader.readByte(): reader.read(),
-      };''');
+        final List<dynamic> fields = List.filled(${maxFieldNumber + 1}, null);
+        for (int i = 0; i < numOfFields; i++) {
+          final int fieldId = reader.readByte();
+          final dynamic value = reader.read();
+          if (fieldId < fields.length) {
+            fields[fieldId] = value;
+          }
+        }''');
     }
     if (readHook != null) {
       code.writeln('${constantToString(readHook)}(fields);');

@@ -12,7 +12,7 @@ class HiveType {
   final bool isOptimized;
 
   /// Something to run during read
-  final void Function(Map<int, dynamic> fields)? readHook;
+  final void Function(List<dynamic> fields)? readHook;
 
   /// This parameter can be used to keep track of old fieldIds which must not
   /// be reused. The generator will throw an error if a legacy fieldId is

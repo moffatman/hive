@@ -87,26 +87,37 @@ String literalToString(
   }
 
   if (reader.isList) {
+    final itemsType =
+      reader.objectValue.type!
+      .typeArgumentsOf(const TypeChecker.typeNamed(List))!.first;
     final listTypeInformation = [...typeInformation, 'List'];
     final listItems = reader.listValue
         .map((it) =>
           constantToString(it, listTypeInformation, constConstructors))
         .join(', ');
-    return '[$listItems]';
+    return '<${itemsType.getDisplayString()}>[$listItems]';
   }
 
   if (reader.isSet) {
+    final itemsType =
+        reader.objectValue.type!
+        .typeArgumentsOf(const TypeChecker.typeNamed(Set))!.first;
     final setTypeInformation = [...typeInformation, 'Set'];
     final setItems = reader.setValue
         .map((it) =>
           constantToString(it, setTypeInformation, constConstructors))
         .join(', ');
-    return '{$setItems}';
+    return '<${itemsType.getDisplayString()}>{$setItems}';
   }
 
   if (reader.isMap) {
+    final typeArgs =
+        reader.objectValue.type!
+        .typeArgumentsOf(const TypeChecker.typeNamed(Map))!;
+    final keyTypeStr = typeArgs[0].getDisplayString();
+    final valueTypeStr = typeArgs[1].getDisplayString();
     final mapTypeInformation = [...typeInformation, 'Map'];
-    final buffer = StringBuffer('{');
+    final buffer = StringBuffer('<$keyTypeStr, $valueTypeStr>{');
 
     var first = true;
 

@@ -62,9 +62,18 @@ class ClassBuilder extends Builder {
 
     var code = StringBuffer();
     code.writeln('final numOfFields = reader.readByte();');
+    code.writeln(
+      'final List<dynamic> fields = List.filled(${maxFieldNumber + 1}, null);');
+    for (var field in getters) {
+      final defaultValue = field.defaultValue;
+      if (defaultValue == null || defaultValue.isNull) {
+        continue;
+      }
+      code.writeln(
+        'fields[${field.index}] = ${constantToString(defaultValue)};');
+    }
     if (isOptimized) {
       code.writeln('''
-      final List<dynamic> fields = List.filled(${maxFieldNumber + 1}, null);
       if (numOfFields == 255) {
         // Dynamic number of fields
         while (true) {
@@ -92,7 +101,6 @@ class ClassBuilder extends Builder {
       check (getters.every((g) => !g.isOptimized),
         'Optimized fields are only allowed in optimized classes.');
       code.writeln('''
-        final List<dynamic> fields = List.filled(${maxFieldNumber + 1}, null);
         for (int i = 0; i < numOfFields; i++) {
           final int fieldId = reader.readByte();
           final dynamic value = reader.read();
@@ -116,10 +124,9 @@ class ClassBuilder extends Builder {
         if (param.isNamed) {
           code.write('${param.name}: ');
         }
-        code.write(_value(
+        code.write(_cast(
           param.type,
           'fields[${field.index}]',
-          field.defaultValue,
         ));
         code.writeln(',');
         fields.remove(field);
@@ -134,10 +141,9 @@ class ClassBuilder extends Builder {
       final bad = _problemWithOptimizedField(field);
       foundBadFields |= bad;
       code.write('..${field.name} = ');
-      code.writeln(_value(
+      code.writeln(_cast(
         field.type,
         'fields[${field.index}]',
-        field.defaultValue,
       ));
     }
 
@@ -146,12 +152,6 @@ class ClassBuilder extends Builder {
     check(!foundBadFields, 'Problem with ${interface.name} fields');
 
     return code.toString();
-  }
-
-  String _value(DartType type, String variable, DartObject? defaultValue) {
-    var value = _cast(type, variable);
-    if (defaultValue?.isNull != false) return value;
-    return '$variable == null ? ${constantToString(defaultValue!)} : $value';
   }
 
   String _cast(DartType type, String variable) {

@@ -118,7 +118,7 @@ class FrameValueType {
   /// null
   static const nullT = 0;
 
-  /// int
+  /// Legacy integer encoded as a double.
   static const intT = 1;
 
   /// double
@@ -133,7 +133,7 @@ class FrameValueType {
   /// Uint8List
   static const byteListT = 5;
 
-  /// List<int>
+  /// Legacy List<int> with each integer encoded as a double.
   static const intListT = 6;
 
   /// List<double>
@@ -162,4 +162,12 @@ class FrameValueType {
 
   /// false
   static const boolFalseT = 15;
+
+  // IDs 16-18 belong to the built-in DateTime and BigInt adapters.
+
+  /// Signed 64-bit integer stored without conversion to double.
+  static const int64T = 19;
+
+  /// List<int> with fixed-width signed 64-bit elements.
+  static const int64ListT = 20;
 }

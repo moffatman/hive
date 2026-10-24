@@ -114,6 +114,14 @@ class BinaryReaderImpl extends BinaryReader {
   }
 
   @override
+  int readInt64() {
+    _requireBytes(8);
+    final value = _byteData.getInt64(_offset, Endian.little);
+    _offset += 8;
+    return value;
+  }
+
+  @override
   double readDouble() {
     _requireBytes(8);
     var value = _byteData.getFloat64(_offset, Endian.little);
@@ -155,6 +163,13 @@ class BinaryReaderImpl extends BinaryReader {
       _offset += 8;
     }
     return list;
+  }
+
+  @override
+  List<int> readInt64List([int? length]) {
+    length ??= readUint32();
+    _requireBytes(length * 8);
+    return List<int>.generate(length, (_) => readInt64());
   }
 
   @override
@@ -307,6 +322,8 @@ class BinaryReaderImpl extends BinaryReader {
         return null;
       case FrameValueType.intT:
         return readInt();
+      case FrameValueType.int64T:
+        return readInt64();
       case FrameValueType.doubleT:
         return readDouble();
       case FrameValueType.boolT:
@@ -317,6 +334,8 @@ class BinaryReaderImpl extends BinaryReader {
         return readByteList();
       case FrameValueType.intListT:
         return readIntList();
+      case FrameValueType.int64ListT:
+        return readInt64List();
       case FrameValueType.doubleListT:
         return readDoubleList();
       case FrameValueType.boolListT:

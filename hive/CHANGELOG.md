@@ -1,5 +1,15 @@
 # 3.0.0-dev
 
+### Fixes
+
+- Preserve large integer precision in scalar values and integer lists. Existing
+  data remains readable. Tagged integers
+  outside the exact double range use signed 64-bit integer and integer-list IDs
+  (19 and 20), with eight bytes per integer. Added exact `writeInt64`/`readInt64`
+  and integer-list methods for versioned custom adapters; legacy `writeInt` and
+  `writeIntList` retain their double encoding. Older Hive readers cannot read the new type IDs.
+  Previously rounded IDs cannot be recovered from the stored value alone.
+
 ### Enchantments
 
 - Implemented in-memory storage backend

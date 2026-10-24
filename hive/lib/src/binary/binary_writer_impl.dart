@@ -109,6 +109,16 @@ class BinaryWriterImpl extends BinaryWriter {
   }
 
   @override
+  void writeInt64(int value) {
+    _reserveBytes(8);
+    _byteData.setInt64(_offset, value, Endian.little);
+    _offset += 8;
+  }
+
+  static bool _needsInt64(int value) =>
+      value < -0x1fffffffffffff || value > 0x1fffffffffffff;
+
+  @override
   void writeDouble(double value) {
     ArgumentError.checkNotNull(value);
 
@@ -162,6 +172,17 @@ class BinaryWriterImpl extends BinaryWriter {
     for (var i = 0; i < length; i++) {
       byteData.setFloat64(_offset, list[i].toDouble(), Endian.little);
       _offset += 8;
+    }
+  }
+
+  @override
+  void writeInt64List(List<int> values, {bool writeLength = true}) {
+    if (writeLength) {
+      writeUint32(values.length);
+    }
+    _reserveBytes(values.length * 8);
+    for (final value in values) {
+      writeInt64(value);
     }
   }
 
@@ -319,10 +340,15 @@ class BinaryWriterImpl extends BinaryWriter {
         writeByte(FrameValueType.nullT);
       }
     } else if (value is int) {
-      if (writeTypeId) {
-        writeByte(FrameValueType.intT);
+      if (writeTypeId && _needsInt64(value)) {
+        writeByte(FrameValueType.int64T);
+        writeInt64(value);
+      } else {
+        if (writeTypeId) {
+          writeByte(FrameValueType.intT);
+        }
+        writeInt(value);
       }
-      writeInt(value);
     } else if (value is double) {
       if (writeTypeId) {
         writeByte(FrameValueType.doubleT);
@@ -381,10 +407,15 @@ class BinaryWriterImpl extends BinaryWriter {
       }
       writeByteList(value);
     } else if (value is List<int>) {
-      if (writeTypeId) {
-        writeByte(FrameValueType.intListT);
+      if (writeTypeId && value.any(_needsInt64)) {
+        writeByte(FrameValueType.int64ListT);
+        writeInt64List(value);
+      } else {
+        if (writeTypeId) {
+          writeByte(FrameValueType.intListT);
+        }
+        writeIntList(value);
       }
-      writeIntList(value);
     } else if (value is List<double>) {
       if (writeTypeId) {
         writeByte(FrameValueType.doubleListT);

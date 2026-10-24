@@ -17,8 +17,13 @@ abstract class BinaryWriter {
   /// Write a 32-bit unsigned integer as four bytes.
   void writeUint32(int value);
 
-  /// Write a 64-bit signed integer as eight bytes.
+  /// Write an integer using the legacy eight-byte double encoding.
+  /// Use [writeInt64] for exact large integers in versioned adapter formats.
   void writeInt(int value);
+
+  /// Write a signed 64-bit integer as eight bytes, without a type ID.
+  /// Pair with [BinaryReader.readInt64], not the legacy `readInt` method.
+  void writeInt64(int value);
 
   /// Write a 64-bit double as eight bytes.
   void writeDouble(double value);
@@ -38,6 +43,9 @@ abstract class BinaryWriter {
 
   /// Write a [list] of integers.
   void writeIntList(List<int> list, {bool writeLength = true});
+
+  /// Write integers as exact signed 64-bit values, without a type ID.
+  void writeInt64List(List<int> list, {bool writeLength = true});
 
   /// Write a [list] of doubles.
   void writeDoubleList(List<double> list, {bool writeLength = true});

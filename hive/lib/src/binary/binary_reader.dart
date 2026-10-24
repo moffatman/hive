@@ -34,8 +34,11 @@ abstract class BinaryReader {
   /// Read four bytes as 32-bit unsigned integer.
   int readUint32();
 
-  /// Read eight bytes as 64-bit signed integer.
+  /// Read an integer using the legacy eight-byte double encoding.
   int readInt();
+
+  /// Read eight bytes as an exact signed 64-bit integer.
+  int readInt64();
 
   /// Read eight bytes as 64-bit double.
   double readDouble();
@@ -57,6 +60,9 @@ abstract class BinaryReader {
   ///
   /// If [length] is not provided, it is read first.
   List<int> readIntList([int? length]);
+
+  /// Read exact signed 64-bit integers written by [BinaryWriter.writeInt64List].
+  List<int> readInt64List([int? length]);
 
   /// Read a list of doubles with [length].
   ///
